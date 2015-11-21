@@ -28,20 +28,32 @@ def pad(string,block_size):
 def unpad(msg):
   return msg[:-1*int.from_bytes(msg[-1:], byteorder='big')]
 
+
+### get key
+
 key1 = b"140b41b22a29beb4061bda66b6747e14"
+
+### get plain text msg
+
 msg = b"Hi there, how you doing? I'm fine, thank you, how are you? Super"
+
+### pad the message
+
+msg = pad(msg,AES.block_size)
+
+### empty cipher string
+
 cipher = b""
+
+### get IV by random
 
 iv = Random.new().read(AES.block_size)
 
-#print("IV:",iv)
-msg = pad(msg,AES.block_size)
-print(msg)
-print(len(msg))
-msg = unpad(msg)
-print(msg)
+### prepend IV to cipher
 
 cipher += iv
 
 
+
+#for j in range(0,len(msg),
 
