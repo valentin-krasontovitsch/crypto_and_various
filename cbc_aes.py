@@ -53,7 +53,7 @@ def encrypt_aes_cbc(key,msg):
 
 ### Decryption Algorithm, CBC, using AES-128
 ### key & cipher should be provided as bytes objects
-### returns encrypted padded msg with IV prepended
+### returns decrypted msg
 def decrypt_aes_cbc(key,cipher):
 
   ### init empty msg bytes object
