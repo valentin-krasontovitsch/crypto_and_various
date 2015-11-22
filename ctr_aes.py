@@ -11,20 +11,10 @@ from struct import *
 import binascii
 import sys
 
-def pad(array,block_size):
-  i = block_size - len(array)%block_size
-  return array + bytes(chr(i),"ascii")*i
-
-def unpad(array):
-  return array[:-1*int.from_bytes(array[-1:], byteorder='big')]
 
 ### return XOR of bytearrays s,t
 def xor(s,t):
   return bytes(x^y for x,y in zip(s,t))
-
-### transfer bytes object to string of hex digits
-#def ba_to_hex(s):
-  #return "".join("%02x" % b for b in s)
 
 
 ### Encryption Algorithm, CTR, with random IV, using AES-128
@@ -32,9 +22,6 @@ def xor(s,t):
 ### returns encrypted padded msg with IV prepended
 def encrypt_aes_ctr(key,msg):
   
-  ### pad the message
-  #msg = pad(msg,AES.block_size)
-
   ### init empty cipher bytes object
   cipher = bytes()
 
@@ -51,6 +38,7 @@ def encrypt_aes_ctr(key,msg):
   ctr = iv
   
   ### actual encoding, block-wise
+  ### with case for last block (no padding)
   
   for j in range(0,len(msg),16):
     if j + 16 > len(msg):
@@ -58,7 +46,7 @@ def encrypt_aes_ctr(key,msg):
     else:
       cipher += xor(msg[j:j+16],aes.encrypt(ctr))
     ### increase counter
-    ctr = (int.from_bytes(ctr,sys.byteorder)+1).to_bytes(16,sys.byteorder)
+    ctr = (int.from_bytes(ctr,byteorder='big',signed=False)+1).to_bytes(16,byteorder='big',signed=False)
 
   return cipher
 
@@ -77,6 +65,7 @@ def decrypt_aes_ctr(key,cipher):
   ctr = cipher[0:AES.block_size]
   
   ### actual decryption, block-wise
+  ### with a case for the last block (no padding)
   
   for j in range(16,len(cipher),16):
     if j + 16 > len(cipher):
@@ -84,9 +73,9 @@ def decrypt_aes_ctr(key,cipher):
     else:
       msg += xor( cipher[j:j+16] , aes.encrypt(ctr))
     ### increase counter
-    ctr = (int.from_bytes(ctr,byteorder='big', signed=False)+1).to_bytes(16,byteorder='big', signed=False)
+    ctr = (int.from_bytes(ctr,byteorder='big',signed=False)+1).to_bytes(16,byteorder='big',signed=False)
 
-  ### return unpadded message
+  ### return decrypted message
   return msg
 
 

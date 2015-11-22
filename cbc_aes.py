@@ -21,10 +21,6 @@ def unpad(array):
 def xor(s,t):
   return bytes(x^y for x,y in zip(s,t))
 
-### transfer bytes object to string of hex digits
-def ba_to_hex(s):
-  return "".join("%02x" % b for b in s)
-
 
 ### Encryption Algorithm, CBC, with random IV, using AES-128
 ### key & plain text should be provided as bytes objects
@@ -53,15 +49,17 @@ def encrypt_aes_cbc(key,msg):
 
 ### Decryption Algorithm, CBC, using AES-128
 ### key & cipher should be provided as bytes objects
-### returns decrypted msg
+### returns decrypted, unpadded msg
 def decrypt_aes_cbc(key,cipher):
 
   ### init empty msg bytes object
   msg = bytes()
 
-  ### Initialize cipher AES in electronic code book mode
+  ### init cipher AES in electronic code book mode
   aes = AES.new(key, AES.MODE_ECB)
 
+
+  ### actual decryption, block-wise
   for j in range(16,len(cipher),16):
     msg += xor( cipher[j-16:j] , aes.decrypt(cipher[j:j+16]))
 
