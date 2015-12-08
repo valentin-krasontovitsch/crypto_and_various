@@ -26,30 +26,78 @@ class PaddingOracle(object):
 # return plain text as bytearray
 
 def det_block(orig,k):
-  # initialize guess of current block
+  # initialize guess of current block, pad
   guess = bytearray([0 for i in range(0,block_size)])
+  pad = bytearray([0 for i in range(0,block_size)])
+  mod = bytearray.fromhex(orig)
   #po.query(batoh(orig))
   # k=1 -> last block, determine padding first
   
   if k == 1:
+    # xor mod with pad (of length 1)
+    mod[-1*block_size-1] ^= 1
+    # try pad lengths
     for i in range(1,17):
-      mod = bytearray.fromhex(orig)
+      # small debug msg
       print("trying %i:",i)
-      #print("mod: %i",mod[-1])
-      #print("xor: %i",1^i)
-      mod[-1*block_size-1] ^= 1 ^ i
-      #print(batoh(mod))
-      #print("result: %i",mod[-1])
+      # xor mod with guess of pad length
+      mod[-1*block_size-1] ^= i
+      # check modified mod success: break
       if po.query(batoh(mod)):       # Issue HTTP query with the given argument
         break
+      # failure: revert xor, try next
+      mod[-1*block_size-1] ^= i
       print("-------------")
-    for j in range(-i,0):
-      guess[j] = i
-      
-    start = i
+    
+    # revert pad xor
+    mod[-1*block_size-1] ^= 1
+    # xor rest of mod with padding
+    for j in range(1,i):
+      mod[-1*block_size-1-j] = i
+    # update guess with padding
+    for j in range(i):
+      guess[-1-j] = i
+    # set starting index for estimated pad
+    start = i+1
   else:
-    start = 0
+    # ... and for no pad (not last block)
+    start = 1
   
+  # debug end point !!!
+  return guess
+
+  # loop (backwards) through and modify block k-1 in order to guess block k
+  # starting at position start, counted from the end
+  for j in range(start,block_size+1):
+    
+    # small debug msg
+    print("Trying position %i, counted backwards",j)
+    
+    ## prepare pad
+    #for l in range(j):
+      #pad[-l-1] = j
+    
+    # iterate through mod and xor with pad
+    for l in range(j):
+      mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
+    
+    # loop through all guesses for j-th byte
+    for char in range(254):
+      # update j-th byte of guess (backwards...)
+      guess[-j] = char
+      ## reinitialize 
+      #mod = bytearray.fromhex(orig)
+      
+      # small debug msg
+      print("Trying character ",char)
+      
+      for j in range(i):
+        mod[-1*(k)*block_size-1-j] ^= guess[-j] ^ char
+        if check(mod):
+          break
+    # revert pad xor
+    for l in range(j):
+      mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
   return guess
 
 #def det_byte(orig,k):
