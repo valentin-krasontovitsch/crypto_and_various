@@ -51,9 +51,9 @@ def det_block(orig,k):
     
     # revert pad xor
     mod[-1*block_size-1] ^= 1
-    # xor rest of mod with padding
+    # xor rest of mod with padding (i.e. our successful guess)
     for j in range(1,i):
-      mod[-1*block_size-1-j] = i
+      mod[-1*block_size-1-j] ^= i
     # update guess with padding
     for j in range(i):
       guess[-1-j] = i
@@ -63,8 +63,13 @@ def det_block(orig,k):
     # ... and for no pad (not last block)
     start = 1
   
+  # some debuggin prints to check mod and guess
+  #print(batoh(guess))
+  #print(batoh(mod[-2*block_size:-block_size]))
+  #print(orig[-4*block_size:-2*block_size])
+  
   # debug end point !!!
-  return guess
+  #return guess
 
   # loop (backwards) through and modify block k-1 in order to guess block k
   # starting at position start, counted from the end
@@ -82,22 +87,28 @@ def det_block(orig,k):
       mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
     
     # loop through all guesses for j-th byte
-    for char in range(254):
+    for char in range(256):
       # update j-th byte of guess (backwards...)
       guess[-j] = char
       ## reinitialize 
       #mod = bytearray.fromhex(orig)
       
       # small debug msg
-      print("Trying character ",char)
+      print("Trying character %i", char)
       
-      for j in range(i):
-        mod[-1*(k)*block_size-1-j] ^= guess[-j] ^ char
-        if check(mod):
-          break
-    # revert pad xor
+      # xor with guess
+      mod[-k*block_size-j] ^= guess[-j]
+      # check modified url; success: break out of loop, byte was guessed
+      # guess has the byte saved, mod is xored with guess up to that byte
+      if po.query(batoh(mod)):
+        break
+      # ... failure: revert xor on mod with guess, go on guessing
+      mod[-k*block_size-j] ^= guess[-j]
+      
+    # revert pad xor, proceed with next byte
     for l in range(j):
       mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
+    
   return guess
 
 #def det_byte(orig,k):
@@ -131,13 +142,14 @@ if __name__ == "__main__":
   
   orig = "f20bdba6ff29eed7b046d1df9fb7000058b1ffb4210a580f748b4ac714c001bd4a61044426fb515dad3f21f18aa577c0bdf302936266926ff37dbf7035d5eeb4"
   
+  last_block="sifrage\t\t\t\t\t\t\t\t\t"
   # initialize things
   #po.query(orig)
   # make url into bytearray which will be modified and tested
   #orig_b = bytes.fromhex(orig)
   #po.query(batoh(orig_b))
   last_block = det_block(orig,1)
-  print(last_block)
+  print(last_block.decode("utf-8")
   #print(batoh(last_block))
   #print(last_block.decode("utf-8"))
   
