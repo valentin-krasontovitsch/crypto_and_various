@@ -29,10 +29,12 @@ def det_block(orig,k):
   # initialize guess of current block, pad
   guess = bytearray([0 for i in range(0,block_size)])
   pad = bytearray([0 for i in range(0,block_size)])
-  mod = bytearray.fromhex(orig)
+  
+  # intialize the to be sent url, cutting of after k-th block
+  mod = bytearray.fromhex(orig[:(-k+1)*block_size*2])
   #po.query(batoh(orig))
   # k=1 -> last block, determine padding first
-  
+  print(batoh(mod))
   if k == 1:
     # xor mod with pad (of length 1)
     mod[-1*block_size-1] ^= 1
@@ -84,7 +86,10 @@ def det_block(orig,k):
     
     # iterate through mod and xor with pad
     for l in range(j):
-      mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
+      mod[-block_size-l-1] ^= j   # last j bytes in (k-1)-st block
+    
+    #print(orig[-2*(k+1)*block_size:-2*k*block_size])
+    #print(batoh(mod[-(k+1)*block_size:-k*block_size]))
     
     # loop through all guesses for j-th byte
     for char in range(256):
@@ -97,17 +102,17 @@ def det_block(orig,k):
       print("Trying character %i", char)
       
       # xor with guess
-      mod[-k*block_size-j] ^= guess[-j]
+      mod[-block_size-j] ^= guess[-j]
       # check modified url; success: break out of loop, byte was guessed
       # guess has the byte saved, mod is xored with guess up to that byte
       if po.query(batoh(mod)):
         break
       # ... failure: revert xor on mod with guess, go on guessing
-      mod[-k*block_size-j] ^= guess[-j]
+      mod[-block_size-j] ^= guess[-j]
       
     # revert pad xor, proceed with next byte
     for l in range(j):
-      mod[-k*block_size-l-1] ^= j   # last j bytes in (k-1)-st block
+      mod[-block_size-l-1] ^= j   # last j bytes in (k-1)-st block
     
   return guess
 
@@ -138,42 +143,29 @@ if __name__ == "__main__":
 
   # original url which is to be decrypted
   
-  #orig = "f20bdba6ff29eed7b046d1df9fb7000058b1ffb4210a580f748b4ac714c001bd4a61044426fb515dad3f21f18aa577c0bdf302936266926ff37dbf7035d5eeb4"
-  
   orig = "f20bdba6ff29eed7b046d1df9fb7000058b1ffb4210a580f748b4ac714c001bd4a61044426fb515dad3f21f18aa577c0bdf302936266926ff37dbf7035d5eeb4"
   
+  # saving already cracked information
+  
   last_block="sifrage\t\t\t\t\t\t\t\t\t"
-  # initialize things
-  #po.query(orig)
-  # make url into bytearray which will be modified and tested
-  #orig_b = bytes.fromhex(orig)
-  #po.query(batoh(orig_b))
-  last_block = det_block(orig,1)
-  print(last_block.decode("utf-8")
-  #print(batoh(last_block))
-  #print(last_block.decode("utf-8"))
   
-  ## guess of current block
-  #guess = bytearray([0 for i in range(0,block_size)])
+  msg_b = bytearray()
+  msg_b = det_block(orig,2)
   
-  ## pad, to be applied to current block
-  #pad = bytearray([0 for i in range(0,block_size)])
-  #po.query(batoh(orig_b))
-  #print("just tried it - did it print anything?")
-  ## pad - just last byte for now
-  #pad[-1] = 1
-  #for i in range(0,16):
-    #mod = orig_b
-    #print("trying %i:",i)
-    #guess[-1] = i
-    ##print(guess[-1])
-    
-    ## apply guess and pad to original thing
-    #print(batoh(mod[-2*block_size:-1*block_size]))
-    ##for i in range(0,block_size):
-    #mod[-1*block_size-1] ^= pad[-1] ^ guess[-1]
-    #print(mod == orig_b)
-    #print(batoh(mod[-2*block_size:-1*block_size]))
-    #if po.query(batoh(mod)):       # Issue HTTP query with the given argument
-      #break
-  #pad_length = guess[-1]
+  # looping through all blocks, decrypting all but first block of orig
+  
+  #for k in range(1,int(len(orig)/32)):
+    #msg_b = det_block(orig,k) + msg_b
+  
+  #msg_h = ''.join([batoh(det_block(orig,k)) for k in range(1,int(len(orig)/32))])
+  
+  # print out result in utf-8 and in hex
+  
+  print(msg_b.decode("utf-8"))
+  print(batoh(msg_b))
+  
+  
+  
+  
+  
+  
