@@ -22,22 +22,21 @@ class PaddingOracle(object):
         return True # good padding
       return False # bad padding
 
+
 # determine the k-th to last block 
 # return plain text as bytearray
-
 def det_block(orig,k):
+
   # initialize guess of current block, pad
   guess = bytearray([0 for i in range(0,block_size)])
   pad = bytearray([0 for i in range(0,block_size)])
-  
-  # intialize the to be sent url, cutting of after k-th block
-  mod = bytearray.fromhex(orig[:(-k+1)*block_size*2])
-  #po.query(batoh(orig))
+
   # k=1 -> last block, determine padding first
-  print(batoh(mod))
   if k == 1:
+    # intialize the to be sent url
+    mod = bytearray.fromhex(orig)
     # xor mod with pad (of length 1)
-    mod[-1*block_size-1] ^= 1
+    mod[-block_size-1] ^= 1
     # try pad lengths
     for i in range(1,17):
       # small debug msg
@@ -50,7 +49,6 @@ def det_block(orig,k):
       # failure: revert xor, try next
       mod[-1*block_size-1] ^= i
       print("-------------")
-    
     # revert pad xor
     mod[-1*block_size-1] ^= 1
     # xor rest of mod with padding (i.e. our successful guess)
@@ -61,18 +59,13 @@ def det_block(orig,k):
       guess[-1-j] = i
     # set starting index for estimated pad
     start = i+1
+
   else:
     # ... and for no pad (not last block)
     start = 1
+    # initialize mod array from orig, cutting down to k-th block
+    mod = bytearray.fromhex(orig[:(-k+1)*block_size*2])
   
-  # some debuggin prints to check mod and guess
-  #print(batoh(guess))
-  #print(batoh(mod[-2*block_size:-block_size]))
-  #print(orig[-4*block_size:-2*block_size])
-  
-  # debug end point !!!
-  #return guess
-
   # loop (backwards) through and modify block k-1 in order to guess block k
   # starting at position start, counted from the end
   for j in range(start,block_size+1):
@@ -80,23 +73,15 @@ def det_block(orig,k):
     # small debug msg
     print("Trying position %i, counted backwards",j)
     
-    ## prepare pad
-    #for l in range(j):
-      #pad[-l-1] = j
-    
     # iterate through mod and xor with pad
     for l in range(j):
       mod[-block_size-l-1] ^= j   # last j bytes in (k-1)-st block
     
-    #print(orig[-2*(k+1)*block_size:-2*k*block_size])
-    #print(batoh(mod[-(k+1)*block_size:-k*block_size]))
     
     # loop through all guesses for j-th byte
     for char in range(256):
       # update j-th byte of guess (backwards...)
       guess[-j] = char
-      ## reinitialize 
-      #mod = bytearray.fromhex(orig)
       
       # small debug msg
       print("Trying character %i", char)
@@ -116,24 +101,6 @@ def det_block(orig,k):
     
   return guess
 
-#def det_byte(orig,k):
-  ## pad - just last byte for now
-  #pad[-1] = 1
-  #for i in range(0,16):
-    #mod = bytearray.fromhex(orig)
-    
-    #guess[-1] = i
-    ##print(guess[-1])
-    
-    ## apply guess and pad to original thing
-    
-    #for i in range(0,block_size):
-        #mod[-2*block_size+i] ^= pad[i] ^ guess[i]
-    
-    #if po.query(batoh(mod)):       # Issue HTTP query with the given argument
-      #break
-  #pad_length = guess[-1]
-
 
 
 if __name__ == "__main__":
@@ -148,21 +115,21 @@ if __name__ == "__main__":
   # saving already cracked information
   
   last_block="sifrage\t\t\t\t\t\t\t\t\t"
+  plain_text="The Magic Words are Squeamish Ossifrage"
+  msg_hex = "546865204d6167696320576f726473206172652053717565616d697368204f7373696672616765090909090909090909"
   
+  # intialize msg
   msg_b = bytearray()
-  msg_b = det_block(orig,2)
   
   # looping through all blocks, decrypting all but first block of orig
   
-  #for k in range(1,int(len(orig)/32)):
-    #msg_b = det_block(orig,k) + msg_b
+  for k in range(1,int(len(orig)/32)):
+    msg_b = det_block(orig,k) + msg_b
   
-  #msg_h = ''.join([batoh(det_block(orig,k)) for k in range(1,int(len(orig)/32))])
-  
-  # print out result in utf-8 and in hex
+  # print out result in utf-8 #and in hex
   
   print(msg_b.decode("utf-8"))
-  print(batoh(msg_b))
+  #print(batoh(msg_b))
   
   
   
