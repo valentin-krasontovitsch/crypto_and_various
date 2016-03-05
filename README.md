@@ -1,2 +1,3 @@
-# crypto_coursera
-programming assignments and projects in connection with stanford crypto I on coursera
+<<<<<<< HEAD
+# crypto_and_various
+programming assignments and projects in connection with stanford crypto I on coursera (python)
